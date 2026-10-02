@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Karar Check · करार जांच</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- Tesseract.js: loaded from jsdelivr CDN. For a fully offline exhibition setup,
+     download this file + the eng.traineddata language file ahead of time and
+     serve both from your own local server instead of this CDN link. -->
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<style>
+  :root {
+    --paper: #F2ECDC; --card: #FFFDF7; --ink: #26241D; --ink-soft: #6B6455;
+    --line: #CDC3A9; --accent: #2F3E3A; --accent-ink: #F2ECDC;
+    --danger: #A63D40; --danger-bg: #F6E3E0; --caution: #96661C; --caution-bg: #F6EAD3;
+    --safe: #3F6B4C; --safe-bg: #E2ECE1; --calc-badge: #2F3E3A; --pattern-badge: #7A6E50;
+    --shadow: 0 2px 10px rgba(38,36,29,0.08);
+    padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #1B1912; --card: #24221A; --ink: #EDE8DA; --ink-soft: #A79E88;
+      --line: #3B3728; --accent: #6E9184; --accent-ink: #1B1912;
+      --danger: #E08B87; --danger-bg: #3A2321; --caution: #E0B364; --caution-bg: #362A16;
+      --safe: #8FC29E; --safe-bg: #1E2E22; --calc-badge: #6E9184; --pattern-badge: #A79E88;
+      --shadow: 0 2px 10px rgba(0,0,0,0.35);
+    }
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); height: 100%; }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100%; background:var(--paper); color:var(--ink);
+    font-family:'IBM Plex Sans','Noto Sans Devanagari',sans-serif; line-height:1.5; overflow-x:hidden; }
+  .wrap { max-width:720px; margin:0 auto; padding:24px 18px 60px; }
+
+  header.top { border-bottom:1px solid var(--line); padding-bottom:16px; margin-bottom:16px;
+    display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; }
+  .brand { font-family:'Source Serif 4',serif; font-weight:700; font-size:1.5rem; }
+  .brand .hi { font-family:'Noto Sans Devanagari',sans-serif; font-weight:600; color:var(--ink-soft); font-size:1rem; display:block; }
+  .lang-toggle { display:inline-flex; border:1px solid var(--line); border-radius:3px; overflow:hidden; flex-shrink:0; }
+  .lang-toggle button { border:none; border-radius:0; padding:8px 14px; font-size:0.85rem; background:var(--card); font-weight:600; }
+  .lang-toggle button.active { background:var(--accent); color:var(--accent-ink); }
+  .tagline { color:var(--ink-soft); font-size:0.92rem; margin-top:4px; }
+  .disclaimer { background:var(--caution-bg); border:1px solid var(--caution); border-radius:5px; padding:16px 18px; margin-bottom:18px; font-size:0.95rem; line-height:1.5; }
+  .disclaimer strong { display:block; margin-bottom:4px; color:var(--caution); }
+
+  .step-indicator { display:flex; gap:5px; margin-bottom:22px; }
+  .step-pill { flex:1; text-align:center; padding:8px 3px; border-radius:3px; font-size:0.7rem; font-weight:600;
+    background:var(--card); border:1px solid var(--line); color:var(--ink-soft); }
+  .step-pill.current { background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+  .step-pill.done { color:var(--safe); border-color:var(--safe); }
+
+  .screen-stack { position:relative; }
+  .screen { display:none; }
+  .screen.screen-active { display:block; animation: screenIn .34s cubic-bezier(.22,.9,.32,1) both; }
+  .screen.screen-active.dir-back { animation-name: screenInBack; }
+  @keyframes screenIn { from { opacity:0; transform:translateX(24px); } to { opacity:1; transform:translateX(0); } }
+  @keyframes screenInBack { from { opacity:0; transform:translateX(-24px); } to { opacity:1; transform:translateX(0); } }
+
+  section { margin-bottom:22px; }
+  .step-label { font-size:0.78rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-soft); margin-bottom:8px; font-weight:600; }
+  .step-sub { font-size:0.93rem; color:var(--ink-soft); margin:-4px 0 14px; line-height:1.55; }
+  .sub-heading { font-size:1rem; font-weight:700; margin:4px 0 10px; display:flex; align-items:center; gap:8px; }
+
+  .intro-hero { text-align:center; padding:26px 10px 6px; }
+  .intro-illustration { margin:0 auto 18px; display:block; }
+  .intro-title { font-family:'Source Serif 4',serif; font-weight:700; font-size:2rem; line-height:1.15; }
+  .intro-title .hi { display:block; font-family:'Noto Sans Devanagari',sans-serif; font-weight:600; font-size:1.2rem; color:var(--ink-soft); margin-top:4px; }
+  .intro-tagline { color:var(--ink-soft); font-size:1rem; line-height:1.6; max-width:42ch; margin:14px auto 0; }
+  .intro-features { display:flex; flex-direction:column; gap:10px; margin:26px 0; text-align:left; }
+  .intro-feature { display:flex; gap:12px; align-items:flex-start; background:var(--card); border:1px solid var(--line); border-radius:6px; padding:12px 14px; box-shadow:var(--shadow); }
+  .intro-feature .ic { font-size:1.3rem; line-height:1; flex-shrink:0; }
+  .intro-feature .tx { font-size:0.9rem; line-height:1.45; }
+  .intro-feature .tx b { display:block; font-size:0.94rem; margin-bottom:2px; }
+  .get-started-btn { width:100%; padding:16px; font-size:1.05rem; border-radius:6px; box-shadow:var(--shadow); }
+
+  .capture-box { border:2px dashed var(--line); border-radius:6px; padding:24px 18px; text-align:center; background:var(--card); box-shadow:var(--shadow); }
+  #preview { max-width:100%; border-radius:4px; margin-top:14px; display:none; }
+  input[type=file] { display:none; }
+  .file-label { display:inline-block; padding:20px 30px; background:var(--accent); color:var(--accent-ink); border-radius:6px; font-weight:700; cursor:pointer; font-size:1.2rem; box-shadow:var(--shadow); }
+  textarea { width:100%; min-height:120px; padding:14px; border:1px solid var(--line); border-radius:3px; background:var(--card); color:var(--ink);
+    font-family:'Source Serif 4',serif; font-size:1rem; line-height:1.65; resize:vertical; margin-top:4px; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; align-items:center; }
+  button { font-family:inherit; font-size:1.02rem; font-weight:600; padding:14px 20px; min-height:48px; border-radius:5px; border:1.5px solid var(--line); background:var(--card); color:var(--ink); cursor:pointer;
+    transition: transform .12s ease, filter .12s ease; }
+  button:active { transform:scale(0.97); }
+  button.primary { background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+  button.ghost { background:transparent; }
+  button.small { padding:10px 14px; font-size:0.9rem; min-height:40px; }
+  button:disabled { opacity:0.5; cursor:not-allowed; }
+  .progress-wrap { display:none; margin-top:14px; }
+  .progress-bar { height:9px; background:var(--line); border-radius:5px; overflow:hidden; }
+  .progress-fill { height:100%; background:var(--accent); width:0%; transition:width .2s; }
+  .progress-label { font-size:0.82rem; color:var(--ink-soft); margin-top:5px; }
+
+  .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; }
+  @media (max-width:480px) { .detail-grid { grid-template-columns:1fr; } }
+  .detail-item { background:var(--card); border:1px solid var(--line); border-radius:4px; padding:12px 14px; box-shadow:var(--shadow); }
+  .detail-item .dlbl { font-size:0.72rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:4px; }
+  .detail-item .dval { font-family:'Source Serif 4',serif; font-weight:600; font-size:1.1rem; line-height:1.4; }
+  .detail-empty { font-size:0.85rem; color:var(--ink-soft); margin-bottom:18px; }
+
+  /* Plain-language explanation blocks */
+  .explain-block { margin-bottom:18px; }
+  .explain-block p { font-size:1.04rem; line-height:1.7; margin:0; }
+
+  /* Lightweight flag rows (not heavy boxed cards) */
+  .flag-row { display:flex; gap:10px; padding:12px 0; border-bottom:1px solid var(--line); }
+  .flag-row:last-child { border-bottom:none; }
+  .flag-row .dot { width:9px; height:9px; border-radius:50%; margin-top:6px; flex-shrink:0; }
+  .flag-row .dot.high { background:var(--danger); } .flag-row .dot.medium { background:var(--caution); }
+  .flag-row .frbody { flex:1; }
+  .flag-row .frhead { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .flag-row .frtitle { font-weight:700; font-size:1.04rem; line-height:1.4; }
+  .flag-row .badge { font-size:0.65rem; text-transform:uppercase; letter-spacing:0.05em; padding:2px 7px; border-radius:9px; font-weight:600; margin-left:auto; flex-shrink:0; }
+  .flag-row .badge.calc { background:var(--calc-badge); color:var(--card); }
+  .flag-row .badge.pattern { background:transparent; color:var(--pattern-badge); border:1px solid var(--pattern-badge); }
+  .flag-row .frdesc { font-size:0.95rem; color:var(--ink-soft); line-height:1.55; margin-top:3px; }
+  .flag-row .frquote { font-family:'Source Serif 4',serif; font-style:italic; font-size:0.82rem; color:var(--ink-soft); margin-top:4px; }
+  .clean-msg { background:var(--safe-bg); border:1px solid var(--safe); color:var(--safe); border-radius:3px; padding:16px 18px; font-size:0.94rem; line-height:1.55; }
+
+  .verdict-banner { border-radius:8px; padding:22px 20px; margin-bottom:16px; border:1px solid; box-shadow:var(--shadow);
+    display:flex; gap:14px; align-items:flex-start; }
+  .verdict-banner.high { background:var(--danger-bg); border-color:var(--danger); color:var(--danger); }
+  .verdict-banner.medium { background:var(--caution-bg); border-color:var(--caution); color:var(--caution); }
+  .verdict-banner.safe { background:var(--safe-bg); border-color:var(--safe); color:var(--safe); }
+  .verdict-banner .vicon { font-size:1.8rem; line-height:1; flex-shrink:0; }
+  .verdict-banner .vtitle { font-family:'Source Serif 4',serif; font-weight:700; font-size:1.25rem; line-height:1.3; margin-bottom:4px; }
+  .verdict-banner .vsub { font-size:0.88rem; opacity:0.9; color:var(--ink); line-height:1.5; }
+
+  .apr-callout { background:var(--card); border:1px solid var(--line); border-left:5px solid var(--danger); border-radius:6px; padding:18px 20px; margin:0 0 16px; box-shadow:var(--shadow);
+    display:flex; align-items:center; gap:16px; }
+  .apr-callout .aicon { font-size:1.6rem; flex-shrink:0; }
+  .apr-callout .num { font-family:'Source Serif 4',serif; font-size:2rem; font-weight:700; color:var(--danger); line-height:1; }
+  .apr-callout .sub { color:var(--ink-soft); font-size:0.87rem; margin-top:6px; line-height:1.5; }
+
+  .count-row { display:flex; gap:10px; margin-bottom:20px; }
+  .count-box { flex:1; background:var(--card); border:1px solid var(--line); border-radius:6px; padding:14px 10px; text-align:center; box-shadow:var(--shadow); }
+  .count-box .cicon { font-size:1.1rem; margin-bottom:4px; display:block; }
+  .count-box .n { font-family:'Source Serif 4',serif; font-size:1.5rem; font-weight:700; }
+  .count-box.high .n { color:var(--danger); }
+  .count-box.medium .n { color:var(--caution); }
+  .count-box .lbl { font-size:0.72rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.04em; }
+
+  .listen-btn-main { width:100%; padding:15px; font-size:1rem; border-radius:6px; box-shadow:var(--shadow); margin-top:2px; }
+  .secondary-actions { justify-content:center; margin-top:10px; }
+
+  /* Q&A */
+  .qa-box { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:16px; margin-top:24px; box-shadow:var(--shadow); }
+  .qa-box .sub-heading { font-size:0.95rem; }
+  .qa-input-row { display:flex; gap:8px; }
+  .qa-input-row input { flex:1; padding:13px 14px; min-height:48px; border:1.5px solid var(--line); border-radius:5px; background:var(--paper); color:var(--ink); font-family:inherit; font-size:1rem; }
+  .qa-chips { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
+  .qa-chip { font-size:0.88rem; padding:10px 14px; border-radius:16px; background:var(--paper); border:1px solid var(--line); cursor:pointer; min-height:40px; display:flex; align-items:center; }
+  .qa-answer { margin-top:12px; padding:12px; background:var(--paper); border-radius:4px; font-size:0.9rem; line-height:1.55; display:none; }
+
+  footer { margin-top:32px; padding-top:16px; border-top:1px solid var(--line); color:var(--ink-soft); font-size:0.78rem; }
+
+  /* Floating "more below" scroll hint — small, out of the way, only shown when needed */
+  .scroll-hint {
+    position:fixed; right:16px; bottom:calc(16px + env(safe-area-inset-bottom,0px));
+    width:42px; height:42px; border-radius:50%; background:var(--accent); color:var(--accent-ink);
+    display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow);
+    border:none; opacity:0; pointer-events:none; transition:opacity .25s ease; z-index:60; cursor:pointer;
+  }
+  .scroll-hint.visible { opacity:0.92; pointer-events:auto; animation:scrollHintBounce 1.6s ease-in-out infinite; }
+  .scroll-hint svg { width:18px; height:18px; }
+  @keyframes scrollHintBounce { 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(5px); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top" id="topHeader" style="display:none;">
+    <div>
+      <div class="brand">Karar Check<span class="hi" id="brandHi">करार जांच</span></div>
+      <p class="tagline" id="tagline"></p>
+    </div>
+    <div class="lang-toggle" role="group" aria-label="Language">
+      <button type="button" id="langEnBtn" class="active">EN</button>
+      <button type="button" id="langHiBtn">हिं</button>
+    </div>
+  </header>
+
+  <div class="disclaimer" id="disclaimerBox" style="display:none;">
+    <strong id="discTitle"></strong>
+    <span id="discBody"></span>
+  </div>
+
+  <div class="step-indicator" id="stepIndicator" style="display:none;">
+    <div class="step-pill current" id="pill1"></div>
+    <div class="step-pill" id="pill2"></div>
+    <div class="step-pill" id="pill3"></div>
+  </div>
+
+  <div class="screen-stack">
+
+  <!-- SCREEN 0: intro -->
+  <section id="screen0" class="screen screen-active">
+    <div class="intro-hero">
+      <svg class="intro-illustration" width="150" height="130" viewBox="0 0 150 130" xmlns="http://www.w3.org/2000/svg">
+        <rect x="30" y="10" width="70" height="90" rx="6" fill="var(--card)" stroke="var(--line)" stroke-width="2"/>
+        <line x1="42" y1="30" x2="88" y2="30" stroke="var(--ink-soft)" stroke-width="3" stroke-linecap="round"/>
+        <line x1="42" y1="42" x2="88" y2="42" stroke="var(--ink-soft)" stroke-width="3" stroke-linecap="round"/>
+        <line x1="42" y1="54" x2="70" y2="54" stroke="var(--ink-soft)" stroke-width="3" stroke-linecap="round"/>
+        <line x1="42" y1="70" x2="80" y2="70" stroke="var(--danger)" stroke-width="3" stroke-linecap="round"/>
+        <line x1="42" y1="80" x2="65" y2="80" stroke="var(--danger)" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="103" cy="88" r="22" fill="none" stroke="var(--accent)" stroke-width="5"/>
+        <line x1="119" y1="104" x2="134" y2="119" stroke="var(--accent)" stroke-width="6" stroke-linecap="round"/>
+        <path d="M94 88 l6 6 l12 -14" fill="none" stroke="var(--safe)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div class="intro-title">Karar Check<span class="hi" id="introTitleHi">करार जांच</span></div>
+      <p class="intro-tagline" id="introTagline"></p>
+    </div>
+    <div class="intro-features" id="introFeatures"></div>
+    <button id="getStartedBtn" class="primary get-started-btn" type="button"></button>
+    <div class="row" style="justify-content:center; margin-top:14px;">
+      <div class="lang-toggle" role="group" aria-label="Language">
+        <button type="button" id="introLangEnBtn" class="active">EN</button>
+        <button type="button" id="introLangHiBtn">हिं</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREEN 1: capture (OCR runs here, no separate review step) -->
+  <section id="screen1" class="screen">
+    <div class="step-label" id="step1Label"></div>
+    <div class="capture-box">
+      <label class="file-label" for="photoInput" id="captureBtnLabel"></label>
+      <input type="file" id="photoInput" accept="image/*" capture="environment">
+      <img id="preview" alt="Captured document">
+      <div class="progress-wrap" id="progressWrap">
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="progress-label" id="progressLabel"></div>
+      </div>
+    </div>
+    <!-- extracted text is kept but hidden by default; a toggle reveals it for fixing bad OCR -->
+    <div class="row" id="rawTextToggleRow" style="display:none;">
+      <button id="showRawBtn" class="ghost small" type="button"></button>
+    </div>
+    <textarea id="docText" style="display:none;"></textarea>
+    <div class="row" id="rawTextActionsRow" style="display:none;">
+      <button id="reAnalyzeBtn" class="primary small" type="button"></button>
+    </div>
+  </section>
+
+  <!-- SCREEN 2: plain-language explanation + errors/mistakes -->
+  <section id="screen2" class="screen">
+    <div class="step-label" id="step2Label"></div>
+
+    <div class="sub-heading" id="keyDetailsHeading"></div>
+    <div id="detailGrid" class="detail-grid"></div>
+    <div id="detailEmpty" class="detail-empty" style="display:none;"></div>
+
+    <div class="sub-heading">
+      <span id="explainHeading"></span>
+      <button id="listenExplainBtn" class="ghost small" type="button" style="margin-left:auto;"></button>
+    </div>
+    <div id="explainBlocks"></div>
+
+    <div class="sub-heading">
+      <span id="errorsHeading"></span>
+      <button id="listenErrorsBtn" class="ghost small" type="button" style="margin-left:auto;"></button>
+    </div>
+    <p class="step-sub" id="errorsSub"></p>
+    <div id="flagList"></div>
+
+    <div class="row">
+      <button id="backTo1Btn" class="ghost" type="button"></button>
+      <button id="seeResultsBtn" class="primary" type="button"></button>
+    </div>
+  </section>
+
+  <!-- SCREEN 3: results + Q&A -->
+  <section id="screen3" class="screen">
+    <div class="step-label" id="step3Label"></div>
+    <div id="verdictBox"></div>
+    <div id="aprBox"></div>
+    <div id="countRow"></div>
+
+    <button id="listenBtn" class="primary listen-btn-main" type="button"></button>
+    <div class="row secondary-actions">
+      <button id="backTo2Btn" class="ghost small" type="button"></button>
+      <button id="newScanBtn" class="ghost small" type="button"></button>
+    </div>
+
+    <div class="qa-box">
+      <div class="sub-heading" id="qaHeading" style="margin-top:0;"></div>
+      <div class="qa-input-row">
+        <input type="text" id="qaInput" />
+        <button id="qaAskBtn" class="primary" type="button"></button>
+      </div>
+      <div class="qa-chips" id="qaChips"></div>
+      <div class="qa-answer" id="qaAnswer"></div>
+    </div>
+  </section>
+
+  </div><!-- /screen-stack -->
+
+  <footer id="footerNote" style="display:none;"></footer>
+
+</div>
+
+<button id="scrollHint" class="scroll-hint" type="button" aria-label="Scroll down">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+</button>
+
+<script>
+(function(){
+  let lang = 'en';
+  let currentScreen = 0;
+  let lastAnalysis = null;
+
+  const STR = {
+    en: {
+      tagline: "Photograph a loan document and understand it in plain language before anyone signs.",
+      discTitle: "This tool can make mistakes. Use at your own risk.",
+      discBody: "It does not give legal advice and does not check the document against any law yet. Always show a loan paper to a bank officer, lawyer, or trusted advisor before signing.",
+      pill1: "1. Capture", pill2: "2. Explanation", pill3: "3. Results",
+      introTagline: "Point your phone at a loan paper and see what it really says — in plain language, in your language.",
+      introFeat1b: "Scan any document", introFeat1t: "Take a photo — the app reads the text for you, fast.",
+      introFeat2b: "Understand the terms", introFeat2t: "Amount, repayment, penalties explained simply — then the mistakes flagged.",
+      introFeat3b: "Hindi or English", introFeat3t: "Read it, or listen to it, in the language you prefer.",
+      getStarted: "Get Started →",
+      step1: "Step 1 — Take a photo of the document",
+      captureBtn: "📷 Take / choose photo",
+      readingProgress: "Reading document…",
+      showRaw: "Show extracted text (to fix mistakes)",
+      hideRaw: "Hide extracted text",
+      reAnalyze: "Re-check with edited text",
+      step2: "Step 2 — What this agreement says",
+      keyDetailsHeading: "Key details",
+      detailEmpty: "No key details (date, amount, names) could be automatically read from this text.",
+      explainHeading: "In plain language",
+      errorsHeading: "Errors & things to question",
+      errorsSub: "\"Calculated\" is plain arithmetic; \"Pattern\" is a wording match a person should confirm.",
+      step3: "Step 3 — Overall result",
+      backBtn: "← Back",
+      seeResultsBtn: "See overall result →",
+      listenBtn: "🔊 Listen to summary",
+      listenShort: "🔊 Listen",
+      newScanBtn: "＋ New scan",
+      highTitle: "High risk — review carefully before signing",
+      highSub: "One or more serious warning signs were found. Do not sign without an independent review by a bank officer, lawyer, or trusted advisor.",
+      medTitle: "Some points need checking",
+      medSub: "No severe red flags, but a few things are unclear or worth confirming before signing.",
+      safeTitle: "No warning signs found by this checklist",
+      safeSub: "This does not guarantee the document is safe — it only means these specific checks found nothing. Still have it reviewed by a person.",
+      countHigh: "Serious", countMed: "To check",
+      dDate: "Agreement date", dPrincipal: "Loan amount (principal)", dLender: "Lender",
+      dBorrower: "Borrower", dInterest: "Interest rate", dTenure: "Tenure / period", dTotal: "Total repayable amount",
+      amountHead: "Amount & interest", repayHead: "Repayment", penaltyHead: "Penalty",
+      generalHead: "General terms", noSentence: "Not clearly stated in the document.",
+      qaHeading: "💬 Ask about this document", qaPlaceholder: "e.g. Can they take my land?",
+      qaAsk: "Ask",
+      qaFallback: "I could not match that to a specific point. Check the points list above, or ask a bank officer, lawyer, or trusted advisor directly.",
+      footer: "Heuristic pattern-and-calculation checks only. No legal database is consulted yet, and this is not a learning/adaptive system — it runs the same fixed checks every time."
+    },
+    hi: {
+      tagline: "ऋण दस्तावेज़ की फोटो लें और हस्ताक्षर करने से पहले उसे आसान भाषा में समझें।",
+      discTitle: "यह उपकरण गलती कर सकता है। इसका उपयोग अपने जोखिम पर करें।",
+      discBody: "यह कानूनी सलाह नहीं है और अभी किसी कानून से मिलान नहीं करता। हस्ताक्षर करने से पहले किसी बैंक अधिकारी, वकील या भरोसेमंद व्यक्ति को यह कागज़ ज़रूर दिखाएँ।",
+      pill1: "1. फोटो", pill2: "2. विवरण", pill3: "3. परिणाम",
+      introTagline: "अपने फ़ोन से ऋण कागज़ की फोटो लें और जानें उसमें असल में क्या लिखा है — आसान भाषा में, अपनी भाषा में।",
+      introFeat1b: "कोई भी दस्तावेज़ स्कैन करें", introFeat1t: "फोटो लें — ऐप तेज़ी से टेक्स्ट पढ़ता है।",
+      introFeat2b: "शर्तें समझें", introFeat2t: "राशि, भुगतान, जुर्माना आसान भाषा में — फिर गलतियाँ दिखाई जाती हैं।",
+      introFeat3b: "हिंदी या अंग्रेज़ी", introFeat3t: "अपनी पसंद की भाषा में पढ़ें या सुनें।",
+      getStarted: "शुरू करें →",
+      step1: "चरण 1 — दस्तावेज़ की फोटो लें",
+      captureBtn: "📷 फोटो लें / चुनें",
+      readingProgress: "दस्तावेज़ पढ़ा जा रहा है…",
+      showRaw: "निकाला गया टेक्स्ट दिखाएँ (गलती ठीक करने हेतु)",
+      hideRaw: "टेक्स्ट छुपाएँ",
+      reAnalyze: "बदले गए टेक्स्ट से फिर जाँचें",
+      step2: "चरण 2 — यह करार क्या कहता है",
+      keyDetailsHeading: "मुख्य विवरण",
+      detailEmpty: "इस टेक्स्ट से मुख्य विवरण (तारीख़, राशि, नाम) अपने आप नहीं पढ़े जा सके।",
+      explainHeading: "आसान भाषा में",
+      errorsHeading: "गलतियाँ और सवाल उठाने योग्य बातें",
+      errorsSub: "\"गणना\" सीधी गणित है; \"पैटर्न\" शब्द मिलान है जिसकी पुष्टि किसी व्यक्ति से करवाएँ।",
+      step3: "चरण 3 — कुल परिणाम",
+      backBtn: "← वापस",
+      seeResultsBtn: "कुल परिणाम देखें →",
+      listenBtn: "🔊 सारांश सुनें",
+      listenShort: "🔊 सुनें",
+      newScanBtn: "＋ नई फोटो",
+      highTitle: "उच्च जोखिम — हस्ताक्षर से पहले ध्यान से जाँचें",
+      highSub: "एक या अधिक गंभीर चेतावनी संकेत मिले हैं। बैंक अधिकारी, वकील या भरोसेमंद व्यक्ति की स्वतंत्र समीक्षा के बिना हस्ताक्षर न करें।",
+      medTitle: "कुछ बिंदुओं की जाँच ज़रूरी है",
+      medSub: "कोई गंभीर चेतावनी नहीं, लेकिन हस्ताक्षर से पहले कुछ बातें स्पष्ट करना ठीक रहेगा।",
+      safeTitle: "इस सूची में कोई चेतावनी संकेत नहीं मिला",
+      safeSub: "इसका मतलब यह नहीं कि दस्तावेज़ सुरक्षित है — केवल इतना कि इन जाँचों में कुछ नहीं मिला। फिर भी किसी व्यक्ति से जँचवाएँ।",
+      countHigh: "गंभीर", countMed: "जाँचने योग्य",
+      dDate: "करार की तारीख़", dPrincipal: "ऋण राशि (मूल)", dLender: "ऋणदाता",
+      dBorrower: "ऋणी", dInterest: "ब्याज दर", dTenure: "अवधि", dTotal: "कुल चुकानी राशि",
+      amountHead: "राशि और ब्याज", repayHead: "भुगतान", penaltyHead: "जुर्माना",
+      generalHead: "सामान्य शर्तें", noSentence: "दस्तावेज़ में स्पष्ट रूप से नहीं बताया गया।",
+      qaHeading: "💬 इस दस्तावेज़ के बारे में पूछें", qaPlaceholder: "जैसे: क्या वे मेरी ज़मीन ले सकते हैं?",
+      qaAsk: "पूछें",
+      qaFallback: "यह किसी खास बिंदु से मेल नहीं खाया। ऊपर बिंदुओं की सूची देखें, या सीधे किसी बैंक अधिकारी, वकील या भरोसेमंद व्यक्ति से पूछें।",
+      footer: "अभी केवल पैटर्न और गणना जांच होती है, कोई कानूनी डेटाबेस नहीं जोड़ा गया, और यह सीखने वाली (adaptive) प्रणाली नहीं है — हर बार एक जैसी तय जाँच चलती है।"
+    }
+  };
+
+  const screenOrder = [0,1,2,3];
+
+  function showScreen(n){
+    const forward = screenOrder.indexOf(n) >= screenOrder.indexOf(currentScreen);
+    screenOrder.forEach(i => {
+      const el = document.getElementById('screen'+i);
+      el.classList.remove('screen-active','dir-back');
+      if (i === n) { el.classList.add('screen-active'); if (!forward) el.classList.add('dir-back'); }
+    });
+    currentScreen = n;
+    const chromeVisible = n !== 0;
+    document.getElementById('topHeader').style.display = chromeVisible ? 'flex' : 'none';
+    document.getElementById('disclaimerBox').style.display = chromeVisible ? 'block' : 'none';
+    document.getElementById('stepIndicator').style.display = chromeVisible ? 'flex' : 'none';
+    document.getElementById('footerNote').style.display = chromeVisible ? 'block' : 'none';
+    if (chromeVisible) {
+      [1,2,3].forEach(i => {
+        const pill = document.getElementById('pill'+i);
+        pill.classList.toggle('current', i === n);
+        pill.classList.toggle('done', i < n);
+      });
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function setLangButtons(){
+    document.getElementById('langEnBtn').classList.toggle('active', lang === 'en');
+    document.getElementById('langHiBtn').classList.toggle('active', lang === 'hi');
+    document.getElementById('introLangEnBtn').classList.toggle('active', lang === 'en');
+    document.getElementById('introLangHiBtn').classList.toggle('active', lang === 'hi');
+  }
+
+  function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  function applyLang(){
+    const s = STR[lang];
+    document.getElementById('tagline').textContent = s.tagline;
+    document.getElementById('discTitle').textContent = s.discTitle;
+    document.getElementById('discBody').textContent = s.discBody;
+    document.getElementById('pill1').textContent = s.pill1;
+    document.getElementById('pill2').textContent = s.pill2;
+    document.getElementById('pill3').textContent = s.pill3;
+
+    document.getElementById('introTagline').textContent = s.introTagline;
+    document.getElementById('introTitleHi').style.display = lang === 'hi' ? 'block' : 'none';
+    document.getElementById('getStartedBtn').textContent = s.getStarted;
+    document.getElementById('introFeatures').innerHTML = `
+      <div class="intro-feature"><span class="ic">📷</span><span class="tx"><b>${escapeHtml(s.introFeat1b)}</b>${escapeHtml(s.introFeat1t)}</span></div>
+      <div class="intro-feature"><span class="ic">🔍</span><span class="tx"><b>${escapeHtml(s.introFeat2b)}</b>${escapeHtml(s.introFeat2t)}</span></div>
+      <div class="intro-feature"><span class="ic">🔊</span><span class="tx"><b>${escapeHtml(s.introFeat3b)}</b>${escapeHtml(s.introFeat3t)}</span></div>
+    `;
+
+    document.getElementById('step1Label').textContent = s.step1;
+    document.getElementById('captureBtnLabel').textContent = s.captureBtn;
+    document.getElementById('showRawBtn').textContent = rawVisible ? s.hideRaw : s.showRaw;
+    document.getElementById('reAnalyzeBtn').textContent = s.reAnalyze;
+
+    document.getElementById('step2Label').textContent = s.step2;
+    document.getElementById('keyDetailsHeading').textContent = s.keyDetailsHeading;
+    document.getElementById('detailEmpty').textContent = s.detailEmpty;
+    document.getElementById('explainHeading').textContent = s.explainHeading;
+    document.getElementById('errorsHeading').textContent = s.errorsHeading;
+    document.getElementById('errorsSub').textContent = s.errorsSub;
+    document.getElementById('listenExplainBtn').textContent = s.listenShort;
+    document.getElementById('listenErrorsBtn').textContent = s.listenShort;
+    document.getElementById('backTo1Btn').textContent = s.backBtn;
+    document.getElementById('seeResultsBtn').textContent = s.seeResultsBtn;
+
+    document.getElementById('step3Label').textContent = s.step3;
+    document.getElementById('listenBtn').textContent = s.listenBtn;
+    document.getElementById('backTo2Btn').textContent = s.backBtn;
+    document.getElementById('newScanBtn').textContent = s.newScanBtn;
+    document.getElementById('qaHeading').textContent = s.qaHeading;
+    document.getElementById('qaInput').placeholder = s.qaPlaceholder;
+    document.getElementById('qaAskBtn').textContent = s.qaAsk;
+    renderQaChips();
+
+    document.getElementById('footerNote').textContent = s.footer;
+    document.getElementById('brandHi').style.display = lang === 'hi' ? 'block' : 'none';
+    setLangButtons();
+    if (lastAnalysis) { renderDetails(lastAnalysis); renderExplanation(lastAnalysis); renderClauses(lastAnalysis); renderVerdict(lastAnalysis); }
+  }
+
+  function setLang(l){ lang = l; applyLang(); }
+  document.getElementById('langEnBtn').addEventListener('click', () => setLang('en'));
+  document.getElementById('langHiBtn').addEventListener('click', () => setLang('hi'));
+  document.getElementById('introLangEnBtn').addEventListener('click', () => setLang('en'));
+  document.getElementById('introLangHiBtn').addEventListener('click', () => setLang('hi'));
+
+  document.getElementById('getStartedBtn').addEventListener('click', () => showScreen(1));
+  document.getElementById('backTo1Btn').addEventListener('click', () => showScreen(1));
+  document.getElementById('backTo2Btn').addEventListener('click', () => showScreen(2));
+  document.getElementById('seeResultsBtn').addEventListener('click', () => { renderVerdict(lastAnalysis); showScreen(3); });
+  document.getElementById('newScanBtn').addEventListener('click', () => {
+    document.getElementById('photoInput').value = '';
+    document.getElementById('preview').style.display = 'none';
+    document.getElementById('docText').value = '';
+    document.getElementById('qaAnswer').style.display = 'none';
+    document.getElementById('qaInput').value = '';
+    lastAnalysis = null;
+    showScreen(1);
+  });
+
+  let rawVisible = false;
+  document.getElementById('showRawBtn').addEventListener('click', () => {
+    rawVisible = !rawVisible;
+    document.getElementById('docText').style.display = rawVisible ? 'block' : 'none';
+    document.getElementById('rawTextActionsRow').style.display = rawVisible ? 'flex' : 'none';
+    document.getElementById('showRawBtn').textContent = rawVisible ? STR[lang].hideRaw : STR[lang].showRaw;
+  });
+  document.getElementById('reAnalyzeBtn').addEventListener('click', () => {
+    lastAnalysis = analyze(document.getElementById('docText').value);
+    renderDetails(lastAnalysis);
+    renderExplanation(lastAnalysis);
+    renderClauses(lastAnalysis);
+    showScreen(2);
+  });
+
+  // ---------- EXIF orientation ----------
+  function getOrientation(file, callback){
+    const reader = new FileReader();
+    reader.onload = function(e){
+      const view = new DataView(e.target.result);
+      if (view.getUint16(0, false) !== 0xFFD8) return callback(-2);
+      const length = view.byteLength;
+      let offset = 2;
+      while (offset < length){
+        const marker = view.getUint16(offset, false);
+        offset += 2;
+        if (marker === 0xFFE1){
+          if (view.getUint32(offset += 2, false) !== 0x45786966) return callback(-1);
+          const little = view.getUint16(offset += 6, false) === 0x4949;
+          offset += view.getUint32(offset + 4, little);
+          const tags = view.getUint16(offset, little);
+          offset += 2;
+          for (let i = 0; i < tags; i++){
+            if (view.getUint16(offset + (i * 12), little) === 0x0112){
+              return callback(view.getUint16(offset + (i * 12) + 8, little));
+            }
+          }
+        } else if ((marker & 0xFF00) !== 0xFF00) break;
+        else offset += view.getUint16(offset, false);
+      }
+      return callback(-1);
+    };
+    reader.readAsArrayBuffer(file.slice(0, 128 * 1024));
+  }
+
+  // Oriented AND downscaled canvas — smaller image = much faster OCR
+  const OCR_MAX_DIM = 2200;
+  function loadOrientedCanvas(file){
+    return new Promise((resolve, reject) => {
+      getOrientation(file, function(orientation){
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = function(){
+          const rotated = (orientation >= 5 && orientation <= 8);
+          const srcW = img.width, srcH = img.height;
+          const outW0 = rotated ? srcH : srcW;
+          const outH0 = rotated ? srcW : srcH;
+          const scale = Math.min(1, OCR_MAX_DIM / Math.max(outW0, outH0));
+          const outW = Math.round(outW0 * scale), outH = Math.round(outH0 * scale);
+
+          const canvas = document.createElement('canvas');
+          canvas.width = outW; canvas.height = outH;
+          const ctx = canvas.getContext('2d');
+          ctx.scale(scale, scale);
+          switch (orientation){
+            case 2: ctx.transform(-1,0,0,1,srcW,0); break;
+            case 3: ctx.transform(-1,0,0,-1,srcW,srcH); break;
+            case 4: ctx.transform(1,0,0,-1,0,srcH); break;
+            case 5: ctx.transform(0,1,1,0,0,0); break;
+            case 6: ctx.transform(0,1,-1,0,srcH,0); break;
+            case 7: ctx.transform(0,-1,-1,0,srcH,srcW); break;
+            case 8: ctx.transform(0,-1,1,0,0,srcW); break;
+            default: break;
+          }
+          ctx.drawImage(img, 0, 0);
+          URL.revokeObjectURL(url);
+          resolve(canvas);
+        };
+        img.onerror = function(err){ URL.revokeObjectURL(url); reject(err); };
+        img.src = url;
+      });
+    });
+  }
+
+  // ---------- Camera capture + OCR ----------
+  const photoInput = document.getElementById('photoInput');
+  const preview = document.getElementById('preview');
+  const progressWrap = document.getElementById('progressWrap');
+  const progressFill = document.getElementById('progressFill');
+  const progressLabel = document.getElementById('progressLabel');
+  const docText = document.getElementById('docText');
+
+  photoInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    progressWrap.style.display = 'block';
+    progressFill.style.width = '0%';
+    progressLabel.textContent = STR[lang].readingProgress;
+
+    try {
+      const canvas = await loadOrientedCanvas(file);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      preview.src = dataUrl;
+      preview.style.display = 'block';
+
+      // oem 1 = LSTM only (faster than default combined engine), psm 6 = uniform text block
+      const result = await Tesseract.recognize(canvas, 'eng', {
+        oem: 1,
+        tessedit_pageseg_mode: 6,
+        logger: (m) => {
+          if (m.status === 'recognizing text'){
+            const pct = Math.round(m.progress * 100);
+            progressFill.style.width = pct + '%';
+            progressLabel.textContent = STR[lang].readingProgress + ' ' + pct + '%';
+          }
+        }
+      });
+      docText.value = result.data.text.trim();
+      document.getElementById('rawTextToggleRow').style.display = 'flex';
+      lastAnalysis = analyze(docText.value);
+      renderDetails(lastAnalysis);
+      renderExplanation(lastAnalysis);
+      renderClauses(lastAnalysis);
+      showScreen(2);
+    } catch (err) {
+      docText.value = '';
+      alert('OCR failed: ' + err.message + ' — if you are offline, Tesseract needs its language file available locally; see the comment near the top of this page’s <head> section.');
+    } finally {
+      progressWrap.style.display = 'none';
+    }
+  });
+
+  // ---------- Key detail extraction ----------
+  function extractDetails(text){
+    const details = {};
+    const dateRe = /(\d{1,2}(?:st|nd|rd|th)?\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4})/i;
+    const mDate = text.match(dateRe);
+    details.date = mDate ? mDate[1] : null;
+
+    const principalRe = /(?:loan of|sum of|amount of)?\s*(?:Rs\.?|₹|INR|rupees)\s?([\d,]+(?:\.\d+)?)/i;
+    const mPrincipal = text.match(principalRe);
+    details.principal = mPrincipal ? ('₹' + mPrincipal[1]) : null;
+
+    // Name must be an immediate run of Capitalized Words (no lowercase connector
+    // words swallowed in between) directly followed by the (lender)/(borrower) tag.
+    // No /i flag here on purpose — [A-Z] must mean uppercase only, so the name
+    // capture can't swallow lowercase connector words from the surrounding sentence.
+    const namePart = '([A-Z][a-zA-Z.]*(?:\\s+[A-Z][a-zA-Z.]*){0,3})';
+    const lenderRe = new RegExp(namePart + '\\s*[\\(\\[]?\\s*[Ll]ender\\s*[\\)\\]]?');
+    const mLender = text.match(lenderRe);
+    details.lender = mLender ? mLender[1].trim() : null;
+
+    const borrowerRe = new RegExp(namePart + '\\s*[\\(\\[]?\\s*[Bb]orrower\\s*[\\)\\]]?');
+    const mBorrower = text.match(borrowerRe);
+    details.borrower = mBorrower ? mBorrower[1].trim() : null;
+
+    const monthlyRe = /(\d+(?:\.\d+)?)\s*%\s*(?:per\s*month|\/\s*month|monthly)/i;
+    const mMonthly = text.match(monthlyRe);
+    if (mMonthly) { details.interest = mMonthly[1] + '% per month'; }
+    else {
+      const anyPctRe = /(\d+(?:\.\d+)?)\s*%/;
+      const mAny = text.match(anyPctRe);
+      details.interest = mAny ? (mAny[1] + '%') : null;
+    }
+
+    const tenureRe = /(?:period|tenure|term)\s*of\s*(\d+\s*(?:months?|years?))/i;
+    const mTenure = text.match(tenureRe);
+    details.tenure = mTenure ? mTenure[1] : null;
+
+    const installmentRe = /repaid\s+in\s+(\d+)\s*(?:equal\s*)?(monthly|annual|yearly|weekly)?\s*install?ments?/i;
+    const mInstall = text.match(installmentRe);
+    details.installments = mInstall ? mInstall[1] : null;
+    details.installmentFreq = mInstall && mInstall[2] ? mInstall[2].toLowerCase() : null;
+
+    const installAmountRe = /install?ments?\s+of\s+(?:Rs\.?|₹|INR)\s?([\d,]+(?:\.\d+)?)\s*each/i;
+    const mInstallAmt = text.match(installAmountRe);
+    details.installmentAmount = mInstallAmt ? mInstallAmt[1] : null;
+
+    if (details.installments && details.installmentAmount) {
+      const total = parseInt(details.installments, 10) * parseFloat(details.installmentAmount.replace(/,/g, ''));
+      details.totalRepayable = '₹' + total.toLocaleString('en-IN');
+    } else {
+      details.totalRepayable = null;
+    }
+
+    const startRe = /starting\s+([^.,]+)/i;
+    const mStart = text.match(startRe);
+    details.repayStart = mStart ? mStart[1].trim() : null;
+
+    const graceRe = /delayed\s+by\s+more\s+than\s+(\d+)\s*(days?|months?)/i;
+    const mGrace = text.match(graceRe);
+    details.penaltyGraceNum = mGrace ? mGrace[1] : null;
+    details.penaltyGraceUnit = mGrace ? mGrace[2].toLowerCase() : null;
+
+    return details;
+  }
+
+  function renderDetails(analysis){
+    const s = STR[lang];
+    const d = analysis.details;
+    const items = [
+      [s.dDate, d.date], [s.dPrincipal, d.principal],
+      [s.dLender, d.lender], [s.dBorrower, d.borrower],
+      [s.dInterest, d.interest], [s.dTenure, d.tenure],
+      [s.dTotal, d.totalRepayable]
+    ].filter(([, value]) => !!value);
+    const grid = document.getElementById('detailGrid');
+    const empty = document.getElementById('detailEmpty');
+    if (items.length === 0) { grid.innerHTML = ''; empty.style.display = 'block'; }
+    else {
+      empty.style.display = 'none';
+      grid.innerHTML = items.map(([label, value]) => `
+        <div class="detail-item"><div class="dlbl">${escapeHtml(label)}</div><div class="dval">${escapeHtml(value)}</div></div>
+      `).join('');
+    }
+  }
+
+  // ---------- Plain-language explanation (Amount / Repayment / Penalty / General) ----------
+  // Built as authored bilingual templates from the structured data already extracted
+  // (details + flags), rather than translating raw OCR text, so EN/HI are both always
+  // correct sentences rather than one being a machine translation of the other.
+  function findFlagIn(flags, key){ return flags.find(f => f.key === key) || null; }
+
+  function buildExplanation(details, flags, apr){
+    const amount = { en: [], hi: [] };
+    const repayment = { en: [], hi: [] };
+    const penalty = { en: [], hi: [] };
+    const general = { en: [], hi: [] };
+
+    // Amount & interest
+    if (details.principal) {
+      amount.en.push(`The loan amount is ${details.principal}.`);
+      amount.hi.push(`ऋण राशि ${details.principal} है।`);
+    }
+    if (details.date) {
+      amount.en.push(`The agreement is dated ${details.date}.`);
+      amount.hi.push(`करार की तारीख़ ${details.date} है।`);
+    }
+    if (details.lender || details.borrower) {
+      amount.en.push(`It is between ${details.lender || 'the lender'} and ${details.borrower || 'the borrower'}.`);
+      amount.hi.push(`यह ${details.lender || 'ऋणदाता'} और ${details.borrower || 'ऋणी'} के बीच है।`);
+    }
+    if (details.interest) {
+      amount.en.push(`Interest is charged at ${details.interest}.`);
+      amount.hi.push(`ब्याज दर ${details.interest} है।`);
+      if (apr) {
+        amount.en.push(`Once compounded, that works out to roughly ${apr.compoundAnnual.toFixed(0)}% per year.`);
+        amount.hi.push(`चक्रवृद्धि होने पर यह लगभग ${apr.compoundAnnual.toFixed(0)}% सालाना बैठता है।`);
+      }
+    }
+    if (amount.en.length === 0) {
+      amount.en.push('No loan amount or interest rate could be clearly read from this document.');
+      amount.hi.push('इस दस्तावेज़ से ऋण राशि या ब्याज दर स्पष्ट रूप से नहीं पढ़ी जा सकी।');
+    }
+
+    // Repayment
+    if (details.tenure) {
+      repayment.en.push(`The loan term is ${details.tenure}.`);
+      repayment.hi.push(`ऋण की अवधि ${details.tenure} है।`);
+    }
+    if (details.installments) {
+      const freqEn = details.installmentFreq ? details.installmentFreq + ' ' : '';
+      const freqHi = details.installmentFreq === 'monthly' ? 'मासिक ' : details.installmentFreq ? details.installmentFreq + ' ' : '';
+      let line = `It should be repaid in ${details.installments} ${freqEn}installments`;
+      let lineHi = `इसे ${details.installments} ${freqHi}किस्तों में चुकाना है`;
+      if (details.installmentAmount) { line += ` of ₹${details.installmentAmount} each`; lineHi += `, हर किस्त ₹${details.installmentAmount} की`; }
+      if (details.repayStart) { line += `, starting ${details.repayStart}`; lineHi += `, जो ${details.repayStart} से शुरू होंगी`; }
+      repayment.en.push(line + '.');
+      repayment.hi.push(lineHi + '।');
+      if (details.totalRepayable) {
+        repayment.en.push(`In total, that comes to about ${details.totalRepayable} repaid over the life of the loan.`);
+        repayment.hi.push(`कुल मिलाकर, ऋण की पूरी अवधि में लगभग ${details.totalRepayable} चुकाने होंगे।`);
+      }
+    } else if (findFlagIn(flags, 'schedule')) {
+      repayment.en.push('No fixed repayment schedule (installment dates or amounts) is written in the document.');
+      repayment.hi.push('दस्तावेज़ में किस्तों की तय तारीख़ या राशि नहीं लिखी गई है।');
+    } else {
+      repayment.en.push('A repayment schedule is mentioned in the document.');
+      repayment.hi.push('दस्तावेज़ में भुगतान अनुसूची का उल्लेख है।');
+    }
+
+    // Penalty
+    const penFlag = findFlagIn(flags, 'penalty');
+    if (penFlag) {
+      if (details.penaltyGraceNum) {
+        const unitHi = details.penaltyGraceUnit && details.penaltyGraceUnit.startsWith('day') ? 'दिन' : 'महीने';
+        penalty.en.push(`A ${penFlag.value}% penalty applies if payment is delayed by more than ${details.penaltyGraceNum} ${details.penaltyGraceUnit}.`);
+        penalty.hi.push(`यदि भुगतान ${details.penaltyGraceNum} ${unitHi} से अधिक देर से होता है, तो ${penFlag.value}% जुर्माना लगता है।`);
+      } else {
+        penalty.en.push(`A ${penFlag.value}% penalty is added if payment is delayed.`);
+        penalty.hi.push(`देरी होने पर ${penFlag.value}% जुर्माना जुड़ता है।`);
+      }
+    } else {
+      penalty.en.push('No specific penalty percentage is stated for late payment.');
+      penalty.hi.push('देरी पर जुर्माने का कोई निश्चित प्रतिशत नहीं बताया गया है।');
+    }
+
+    // General
+    if (findFlagIn(flags, 'collateral')) {
+      general.en.push('The lender can take land or property as collateral if the loan is not repaid.');
+      general.hi.push('भुगतान न होने पर ऋणदाता ज़मीन या संपत्ति गिरवी/ज़ब्त कर सकता है।');
+    } else {
+      general.en.push('No land or property is mentioned as collateral.');
+      general.hi.push('किसी ज़मीन या संपत्ति को गिरवी नहीं बताया गया है।');
+    }
+    if (findFlagIn(flags, 'license')) {
+      general.en.push('No lender license or registration number is mentioned.');
+      general.hi.push('ऋणदाता के लाइसेंस या पंजीकरण नंबर का उल्लेख नहीं है।');
+    } else {
+      general.en.push('A license or registration number is mentioned for the lender.');
+      general.hi.push('ऋणदाता के लिए लाइसेंस या पंजीकरण नंबर का उल्लेख है।');
+    }
+    if (findFlagIn(flags, 'discretion')) {
+      general.en.push('One condition is left entirely to the lender’s discretion, rather than being fixed in writing.');
+      general.hi.push('एक शर्त पूरी तरह ऋणदाता की मर्ज़ी पर छोड़ी गई है, लिखित रूप में तय नहीं है।');
+    }
+    if (findFlagIn(flags, 'compound')) {
+      general.en.push('The interest compounds, which grows the debt faster than a simple rate would.');
+      general.hi.push('ब्याज चक्रवृद्धि है, जो साधारण दर की तुलना में कर्ज़ को तेज़ी से बढ़ाता है।');
+    }
+
+    return { amount, repayment, penalty, general };
+  }
+
+  function renderExplanation(analysis){
+    const s = STR[lang];
+    const g = analysis.explanation;
+    const order = [
+      ['amount', s.amountHead], ['repayment', s.repayHead],
+      ['penalty', s.penaltyHead], ['general', s.generalHead]
+    ];
+    const container = document.getElementById('explainBlocks');
+    container.innerHTML = order.map(([key, label]) => {
+      const sentences = g[key][lang];
+      if (!sentences || sentences.length === 0) return '';
+      return `<div class="explain-block"><div class="sub-heading" style="font-size:0.82rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.04em;">${escapeHtml(label)}</div><p>${escapeHtml(sentences.join(' '))}</p></div>`;
+    }).join('');
+  }
+
+  // ---------- Flagging engine ----------
+  function analyze(text){
+    const flags = [];
+    let apr = null;
+
+    const monthlyRateRe = /(\d+(?:\.\d+)?)\s*%\s*(?:per\s*month|\/\s*month|monthly)/i;
+    const mRate = text.match(monthlyRateRe);
+    if (mRate) {
+      const rate = parseFloat(mRate[1]);
+      const simpleAnnual = rate * 12;
+      const compoundAnnual = (Math.pow(1 + rate/100, 12) - 1) * 100;
+      apr = { rate, simpleAnnual, compoundAnnual, quote: mRate[0] };
+      flags.push({ key:'interest', severity:'high', confidence:'calc',
+        titleEn:`Stated as ${rate}% per month — effective annual rate is much higher`,
+        titleHi:`${rate}% प्रति माह बताया गया — असल वार्षिक दर कहीं अधिक है`,
+        descEn:`Formal bank/NBFC loans in India are typically around 10–16% per year. This works out to about ${compoundAnnual.toFixed(0)}% per year when compounded.`,
+        descHi:`भारत में बैंक/NBFC ऋण आमतौर पर सालाना 10–16% होते हैं। यह चक्रवृद्धि होने पर लगभग ${compoundAnnual.toFixed(0)}% सालाना बैठता है।`,
+        quote:mRate[0] });
+    }
+
+    const compoundRe = /compound(?:ing|ed)?\s*(?:interest|basis)?/i;
+    const mComp = text.match(compoundRe);
+    if (mComp) flags.push({ key:'compound', severity:'medium', confidence:'pattern',
+      titleEn:'Interest compounds — confirm how often', titleHi:'ब्याज चक्रवृद्धि है — आवृत्ति की पुष्टि करें',
+      descEn:'Compounding grows debt faster than it looks. Ask exactly how often it compounds.',
+      descHi:'चक्रवृद्धि ब्याज कर्ज़ को तेज़ी से बढ़ाता है। यह कितनी बार लगता है, ज़रूर पूछें।', quote:mComp[0] });
+
+    const seizeRe = /seiz(?:e|ure)[a-z]*|mortgag(?:e|ed)\s*(?:land|property)?|collateral/i;
+    const mSeize = text.match(seizeRe);
+    if (mSeize) flags.push({ key:'collateral', severity:'high', confidence:'pattern',
+      titleEn:'Property or land can be taken as collateral', titleHi:'ज़मीन या संपत्ति गिरवी/ज़ब्त हो सकती है',
+      descEn:'Failure to repay is tied to losing land or property. Get independent legal advice before agreeing.',
+      descHi:'भुगतान न होने पर ज़मीन या संपत्ति खोने का जोखिम है। सहमत होने से पहले कानूनी सलाह लें।', quote:mSeize[0] });
+
+    const discretionRe = /(?:lender'?s?\s*(?:sole\s*)?discretion|sole\s*discretion|as\s*decided\s*by\s*(?:the\s*)?lender)/i;
+    const mDisc = text.match(discretionRe);
+    if (mDisc) flags.push({ key:'discretion', severity:'medium', confidence:'pattern',
+      titleEn:'A key decision is left to the lender alone', titleHi:'एक अहम फैसला केवल ऋणदाता पर छोड़ा गया है',
+      descEn:'Phrases like "at the lender’s discretion" give the lender unilateral power. Ask for a specific written condition instead.',
+      descHi:'"ऋणदाता की मर्ज़ी" जैसे शब्द फैसला केवल ऋणदाता को देते हैं। इसे स्पष्ट लिखित शर्त से बदलने को कहें।', quote:mDisc[0] });
+
+    const licenseRe = /licen[cs]e|registration\s*(?:no\.?|number)/i;
+    if (!licenseRe.test(text)) flags.push({ key:'license', severity:'medium', confidence:'pattern',
+      titleEn:'No lender license or registration number mentioned', titleHi:'ऋणदाता का लाइसेंस या पंजीकरण नंबर नहीं दिया गया',
+      descEn:'A licensed moneylender usually states registration details. Worth asking for before signing.',
+      descHi:'लाइसेंसधारी साहूकार को आमतौर पर पंजीकरण विवरण देना होता है। हस्ताक्षर से पहले इसे माँगें।', quote:null });
+
+    const scheduleRe = /installment|instalment|repayment\s*schedule/i;
+    if (!scheduleRe.test(text)) flags.push({ key:'schedule', severity:'medium', confidence:'pattern',
+      titleEn:'No fixed repayment schedule is written down', titleHi:'भुगतान की कोई तय अनुसूची नहीं लिखी गई',
+      descEn:'Without fixed installment dates/amounts, disputes about what is "owed" favor the lender. Ask for a written schedule.',
+      descHi:'तय किस्तों की तारीख़/राशि के बिना विवाद में ऋणदाता का पलड़ा भारी होता है। लिखित अनुसूची माँगें।', quote:null });
+
+    const penaltyRe = /(?:penalty|late\s*fee)\D{0,15}(\d+(?:\.\d+)?)\s*%/i;
+    const mPen = text.match(penaltyRe);
+    if (mPen) {
+      const pct = parseFloat(mPen[1]);
+      flags.push({ key:'penalty', value: pct, severity: pct>=5?'high':'medium', confidence:'calc',
+        titleEn:`A ${pct}% penalty is added on default`, titleHi:`चूक होने पर ${pct}% जुर्माना जुड़ता है`,
+        descEn:`A flat ${pct}% penalty on top of existing interest can snowball debt quickly. Ask if it repeats.`,
+        descHi:`मौजूदा ब्याज के ऊपर ${pct}% जुर्माना कर्ज़ तेज़ी से बढ़ा सकता है। पूछें कि यह दोहराता है या नहीं।`, quote:mPen[0] });
+    }
+
+    const details = extractDetails(text);
+    return { flags, apr, details, explanation: buildExplanation(details, flags, apr) };
+  }
+
+  function renderClauses(analysis){
+    const { flags } = analysis;
+    const flagList = document.getElementById('flagList');
+    flagList.innerHTML = '';
+    if (flags.length === 0) {
+      const clean = document.createElement('div');
+      clean.className = 'clean-msg';
+      clean.textContent = STR[lang].safeSub;
+      flagList.appendChild(clean);
+      return;
+    }
+    const rank = f => f.severity === 'high' ? 0 : 1;
+    [...flags].sort((a,b) => rank(a) - rank(b)).forEach(f => {
+      const el = document.createElement('div');
+      el.className = 'flag-row';
+      el.innerHTML = `
+        <span class="dot ${f.severity}"></span>
+        <div class="frbody">
+          <div class="frhead">
+            <span class="frtitle">${escapeHtml(lang==='hi'?f.titleHi:f.titleEn)}</span>
+            <span class="badge ${f.confidence==='calc'?'calc':'pattern'}">${f.confidence==='calc' ? (lang==='hi'?'गणना':'Calculated') : (lang==='hi'?'पैटर्न':'Pattern')}</span>
+          </div>
+          <div class="frdesc">${escapeHtml(lang==='hi'?f.descHi:f.descEn)}</div>
+          ${f.quote ? `<div class="frquote">"${escapeHtml(f.quote)}"</div>` : ''}
+        </div>
+      `;
+      flagList.appendChild(el);
+    });
+  }
+
+  function renderVerdict(analysis){
+    const { flags, apr } = analysis;
+    const s = STR[lang];
+    const countHigh = flags.filter(f => f.severity === 'high').length;
+    const countMed = flags.filter(f => f.severity === 'medium').length;
+    const verdictBox = document.getElementById('verdictBox');
+    let level = 'safe', icon = '✅', title = s.safeTitle, sub = s.safeSub;
+    if (countHigh > 0) { level = 'high'; icon = '⚠️'; title = s.highTitle; sub = s.highSub; }
+    else if (countMed > 0) { level = 'medium'; icon = '❗'; title = s.medTitle; sub = s.medSub; }
+    verdictBox.innerHTML = `<div class="verdict-banner ${level}"><div class="vicon">${icon}</div><div><div class="vtitle">${escapeHtml(title)}</div><div class="vsub">${escapeHtml(sub)}</div></div></div>`;
+
+    document.getElementById('countRow').innerHTML = `
+      <div class="count-row">
+        <div class="count-box high"><span class="cicon">⚠️</span><div class="n">${countHigh}</div><div class="lbl">${escapeHtml(s.countHigh)}</div></div>
+        <div class="count-box medium"><span class="cicon">📋</span><div class="n">${countMed}</div><div class="lbl">${escapeHtml(s.countMed)}</div></div>
+      </div>`;
+
+    const aprBox = document.getElementById('aprBox');
+    aprBox.innerHTML = '';
+    if (apr) {
+      const box = document.createElement('div');
+      box.className = 'apr-callout';
+      box.innerHTML = lang === 'hi'
+        ? `<span class="aicon">📊</span><div><div class="num">~${apr.compoundAnnual.toFixed(0)}% / वर्ष</div><div class="sub">बताई गई ${apr.rate}% प्रति माह दर से गणना की गई चक्रवृद्धि वार्षिक दर।</div></div>`
+        : `<span class="aicon">📊</span><div><div class="num">~${apr.compoundAnnual.toFixed(0)}% / year</div><div class="sub">Effective annual rate, calculated from the stated ${apr.rate}% per month (compounded monthly).</div></div>`;
+      aprBox.appendChild(box);
+    }
+  }
+
+  // ---------- Voice ----------
+  function speak(text){
+    if (!('speechSynthesis' in window)) { alert('Audio not supported in this browser.'); return; }
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = lang === 'hi' ? 'hi-IN' : 'en-IN';
+    utter.rate = 0.95;
+    window.speechSynthesis.speak(utter);
+  }
+
+  document.getElementById('listenExplainBtn').addEventListener('click', () => {
+    if (!lastAnalysis) return;
+    const g = lastAnalysis.explanation;
+    const parts = ['amount','repayment','penalty','general'].map(k => g[k][lang].join(' ')).filter(Boolean);
+    speak(parts.join(' '));
+  });
+  document.getElementById('listenErrorsBtn').addEventListener('click', () => {
+    if (!lastAnalysis) return;
+    const titles = lastAnalysis.flags.map(f => lang==='hi'?f.titleHi:f.titleEn);
+    speak(titles.length ? titles.join('. ') : STR[lang].safeSub);
+  });
+  document.getElementById('listenBtn').addEventListener('click', () => {
+    if (!lastAnalysis) return;
+    const { flags, apr } = lastAnalysis;
+    const countHigh = flags.filter(f => f.severity === 'high').length;
+    let text;
+    if (lang === 'hi') {
+      text = `यह उपकरण गलती कर सकता है। यह कानूनी सलाह नहीं है। कृपया हस्ताक्षर करने से पहले यह दस्तावेज़ किसी भरोसेमंद व्यक्ति को भी दिखाएँ। `
+        + (flags.length === 0 ? `कोई चेतावनी संकेत नहीं मिला, लेकिन इसका मतलब सुरक्षित होना नहीं है।`
+          : `इस दस्तावेज़ में ${flags.length} बिंदु हैं, जिनमें से ${countHigh} गंभीर हैं। `)
+        + (apr ? `ब्याज दर चक्रवृद्धि होने पर लगभग ${apr.compoundAnnual.toFixed(0)} प्रतिशत सालाना बैठती है। ` : '')
+        + flags.map(f => f.titleHi).join('। ');
+    } else {
+      text = `This tool can make mistakes. This is not legal advice. Please also show this document to a trusted person before signing. `
+        + (flags.length === 0 ? `No warning signs were found, but that does not guarantee the document is safe.`
+          : `This document has ${flags.length} points to review. ${countHigh} of them are serious. `)
+        + (apr ? `The stated interest rate works out to about ${apr.compoundAnnual.toFixed(0)} percent per year, once compounded. ` : '')
+        + flags.map(f => f.titleEn).join('. ');
+    }
+    speak(text);
+  });
+
+  // ---------- Q&A (keyword-matched against this document's analysis; not a learning system) ----------
+  // \b word boundaries matter here — without them "rate" matches inside "separate",
+  // "late" matches inside "unrelated", etc., causing wrong/false topic matches.
+  const QA_TOPICS = [
+    { key:'collateral', chipEn:'Can they take my land?', chipHi:'क्या वे ज़मीन ले सकते हैं?',
+      patterns:[/\bland\b|\bcollateral\b|\bproperty\b|\bseiz\w*\b|ज़मीन|जमीन|गिरवी|ज़ब्त/i] },
+    { key:'interest', chipEn:'Is the interest rate fair?', chipHi:'क्या ब्याज दर सही है?',
+      patterns:[/\binterest\b|\brate\b|%|ब्याज|दर/i] },
+    { key:'penalty', chipEn:'What if I pay late?', chipHi:'देरी हुई तो क्या होगा?',
+      patterns:[/\bpenalty\b|\blate\b|\bdefault\b|जुर्माना|देरी/i] },
+    { key:'license', chipEn:'Is this lender licensed?', chipHi:'क्या ऋणदाता लाइसेंसधारी है?',
+      patterns:[/\blicen[cs]e\b|\bregistration\b|लाइसेंस|पंजीकरण/i] },
+    { key:'sign', chipEn:'Should I sign this?', chipHi:'क्या मुझे हस्ताक्षर करना चाहिए?',
+      patterns:[/\bsign\b|\bsafe\b|should i|हस्ताक्षर|सुरक्षित|चाहिए/i] },
+  ];
+
+  function renderQaChips(){
+    const s = STR[lang];
+    document.getElementById('qaChips').innerHTML = QA_TOPICS.map(t =>
+      `<div class="qa-chip" data-key="${t.key}">${escapeHtml(lang==='hi'?t.chipHi:t.chipEn)}</div>`
+    ).join('');
+    document.querySelectorAll('.qa-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const topic = QA_TOPICS.find(t => t.key === chip.dataset.key);
+        document.getElementById('qaInput').value = lang==='hi'?topic.chipHi:topic.chipEn;
+        answerQuestion(topic.key);
+      });
+    });
+  }
+
+  function findFlag(key){ return lastAnalysis ? lastAnalysis.flags.find(f => f.key === key) : null; }
+
+  function answerQuestion(forcedKey){
+    const s = STR[lang];
+    const qEl = document.getElementById('qaInput');
+    const q = qEl.value.trim();
+    const answerBox = document.getElementById('qaAnswer');
+    if (!lastAnalysis) return;
+
+    let topicKey = forcedKey;
+    if (!topicKey) {
+      const found = QA_TOPICS.find(t => t.patterns.some(p => p.test(q)));
+      topicKey = found ? found.key : null;
+    }
+
+    let answer = null;
+    if (topicKey === 'collateral') {
+      const f = findFlag('collateral');
+      answer = f ? (lang==='hi'?f.descHi:f.descEn) : (lang==='hi' ? 'इस दस्तावेज़ में ज़मीन/संपत्ति गिरवी रखने की कोई शर्त नहीं मिली।' : 'No clause about land or property being held as collateral was found in this document.');
+    } else if (topicKey === 'interest') {
+      const d = lastAnalysis.details.interest;
+      const f = findFlag('interest');
+      if (f) answer = lang==='hi'?f.descHi:f.descEn;
+      else answer = d ? (lang==='hi' ? `दस्तावेज़ में ब्याज दर ${d} बताई गई है।` : `The document states an interest rate of ${d}.`)
+                       : (lang==='hi' ? 'इस दस्तावेज़ में ब्याज दर स्पष्ट रूप से नहीं मिली।' : 'No clear interest rate was found in this document.');
+    } else if (topicKey === 'penalty') {
+      const f = findFlag('penalty');
+      answer = f ? (lang==='hi'?f.descHi:f.descEn) : (lang==='hi' ? 'इस दस्तावेज़ में देरी पर जुर्माने का कोई प्रतिशत स्पष्ट रूप से नहीं मिला।' : 'No specific late-payment penalty percentage was found in this document.');
+    } else if (topicKey === 'license') {
+      const f = findFlag('license');
+      answer = f ? (lang==='hi'?f.descHi:f.descEn) : (lang==='hi' ? 'दस्तावेज़ में लाइसेंस/पंजीकरण नंबर का उल्लेख मिला।' : 'A license/registration number was found mentioned in this document.');
+    } else if (topicKey === 'sign') {
+      const countHigh = lastAnalysis.flags.filter(f => f.severity === 'high').length;
+      if (countHigh > 0) answer = lang==='hi'?s.highSub:s.highSub;
+      else if (lastAnalysis.flags.length > 0) answer = lang==='hi'?s.medSub:s.medSub;
+      else answer = lang==='hi'?s.safeSub:s.safeSub;
+    } else {
+      answer = s.qaFallback;
+    }
+
+    answerBox.textContent = answer;
+    answerBox.style.display = 'block';
+  }
+
+  document.getElementById('qaAskBtn').addEventListener('click', () => answerQuestion(null));
+  document.getElementById('qaInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') answerQuestion(null); });
+
+  // ---------- Floating scroll hint ----------
+  const scrollHintBtn = document.getElementById('scrollHint');
+  function updateScrollHint(){
+    const doc = document.documentElement;
+    const remaining = doc.scrollHeight - window.innerHeight - window.scrollY;
+    scrollHintBtn.classList.toggle('visible', currentScreen !== 0 && remaining > 120);
+  }
+  window.addEventListener('scroll', updateScrollHint, { passive: true });
+  window.addEventListener('resize', updateScrollHint);
+  scrollHintBtn.addEventListener('click', () => {
+    window.scrollBy({ top: Math.round(window.innerHeight * 0.75), behavior: 'smooth' });
+  });
+  // re-check after any screen change / content render, once layout settles
+  const _origShowScreen = showScreen;
+  showScreen = function(n){ _origShowScreen(n); setTimeout(updateScrollHint, 400); };
+
+  applyLang();
+  showScreen(0);
+  setTimeout(updateScrollHint, 500);
+})();
+</script>
+</body>
+</html>
